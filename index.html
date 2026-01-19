@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Morat - Mi Vida Entera | Premium Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@1,700&family=Syncopate:wght@700&family=Inter:wght@300;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #00f2ff; }
+        body, html { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100vh; }
+        
+        /* CAPA DE CIERRE FINAL */
+        #fade-out-layer { position: fixed; inset: 0; background: #000; opacity: 0; z-index: 1000; pointer-events: none; transition: opacity 4s; }
+
+        /* FASE 1: INTRO CON LA BANDA */
+        #intro {
+            position: fixed; inset: 0; z-index: 500; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; background: #000; transition: 1.5s;
+        }
+        #morat-bg {
+            position: absolute; inset: 0; 
+            background: url('https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
+            background-size: cover; opacity: 0; filter: brightness(0.4); transition: 1.5s;
+        }
+        .prep-text { position: relative; font-family: 'Syncopate'; color: white; letter-spacing: 10px; font-size: 1.5rem; margin-bottom: 30px; text-align: center; }
+        .start-btn { position: relative; background: none; border: 1px solid var(--accent); color: white; padding: 15px 40px; cursor: pointer; letter-spacing: 5px; font-family: 'Inter'; transition: 0.4s; }
+        .start-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 30px var(--accent); }
+
+        /* FASE 2: ESCENARIOS DINÁMICOS */
+        #stage { position: fixed; inset: 0; z-index: -2; }
+        .bg-layer {
+            position: absolute; inset: 0; background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 3s ease-in-out, transform 20s linear;
+        }
+        /* CIUDAD NEÓN */
+        .city { background-image: url('https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2156&auto=format&fit=crop'); }
+        /* LAGO NOCTURNO */
+        .lake { background-image: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070&auto=format&fit=crop'); }
+        /* MAR / OCÉANO */
+        .ocean { background-image: url('https://images.unsplash.com/photo-1439405326854-01523a114f96?q=80&w=2070&auto=format&fit=crop'); }
+        
+        .bg-layer.active { opacity: 0.5; transform: scale(1.1); }
+
+        .overlay { position: fixed; inset: 0; background: radial-gradient(circle, transparent, #000 140%); z-index: -1; }
+        .rain { position: fixed; inset: 0; background: url('https://raw.githubusercontent.com/PiyushSuthar/Rain-Effect/master/rain.png'); opacity: 0.15; animation: rain 0.3s infinite linear; z-index: -1; }
+        @keyframes rain { from { background-position: 0 0; } to { background-position: 10% 100%; } }
+
+        /* LETRAS */
+        .lyrics-container { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 10; text-align: center; pointer-events: none; padding: 20px; }
+        #lyric-text { color: #fff; font-size: 4rem; transition: all 0.5s ease; opacity: 0; transform: translateY(20px); }
+        #lyric-text.show { opacity: 1; transform: translateY(0); }
+        
+        .style-elegant { font-family: 'Bodoni Moda', serif; font-style: italic; text-shadow: 0 0 15px #fff; }
+        .style-power { font-family: 'Syncopate', sans-serif; text-transform: uppercase; text-shadow: 0 0 25px var(--accent); }
+
+        /* REPRODUCTOR */
+        .player-bar {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 300px; padding: 10px 20px; background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px); border-radius: 20px; display: flex; align-items: center; gap: 15px; opacity: 0; transition: 1s;
+        }
+        #time-display { color: var(--accent); font-family: monospace; font-size: 0.8rem; }
+        .progress { flex: 1; height: 2px; background: rgba(255,255,255,0.1); }
+        #fill { width: 0%; height: 100%; background: var(--accent); }
+
+        #youtube-player { position: absolute; top: -1000px; }
+    </style>
+</head>
+<body>
+
+    <div id="fade-out-layer"></div>
+
+    <div id="intro">
+        <div id="morat-bg"></div>
+        <div class="prep-text">¿ESTÁS PREPARAD@?</div>
+        <button class="start-btn" onclick="iniciar()">SÍ, ESTOY LIST@</button>
+    </div>
+
+    <div id="stage">
+        <div class="bg-layer city active"></div>
+        <div class="bg-layer lake"></div>
+        <div class="bg-layer ocean"></div>
+    </div>
+    <div class="rain"></div>
+    <div class="overlay"></div>
+
+    <div class="lyrics-container"><h1 id="lyric-text"></h1></div>
+
+    <div class="player-bar" id="ui">
+        <span id="time-display">00:00</span>
+        <div class="progress"><div id="fill"></div></div>
+    </div>
+
+    <div id="youtube-player"></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        const lyricText = document.getElementById('lyric-text');
+        const layers = document.querySelectorAll('.bg-layer');
+
+        // LÍNEA DE TIEMPO COMPLETA (Tiempos aproximados para Mi Vida Entera)
+        const syncData = [
+            { t: 0, text: "MORAT", style: "style-power", bg: 0 },
+            { t: 8, text: "Quiero que sepas que te quiero", style: "style-elegant", bg: 0 },
+            { t: 11, text: "Y que no importa lo que pase", style: "style-elegant", bg: 1 },
+            { t: 15, text: "Si estás conmigo", style: "style-power", bg: 1 },
+            { t: 18, text: "Tengo mi vida entera", style: "style-power", bg: 2 },
+            { t: 21, text: "Para entregártela", style: "style-elegant", bg: 2 },
+            { t: 25, text: "Y es que la vida se me pasa", style: "style-elegant", bg: 0 },
+            { t: 28, text: "Pensando solo en ti", style: "style-power", bg: 1 }
+            // Puedes seguir añadiendo frases aquí
+        ];
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '0', width: '0',
+                videoId: 'fOnyfM-p60s', 
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        }
+
+        function iniciar() {
+            document.getElementById('morat-bg').style.opacity = '1';
+            document.querySelector('.prep-text').style.opacity = '0';
+            document.querySelector('.start-btn').style.opacity = '0';
+
+            setTimeout(() => {
+                document.getElementById('intro').style.opacity = '0';
+                document.getElementById('ui').style.opacity = '1';
+                setTimeout(() => {
+                    document.getElementById('intro').style.display = 'none';
+                    player.playVideo();
+                    setInterval(update, 100);
+                }, 1000);
+            }, 2000);
+        }
+
+        function update() {
+            let now = player.getCurrentTime();
+            let duration = player.getDuration();
+            
+            let mins = Math.floor(now / 60);
+            let secs = Math.floor(now % 60);
+            document.getElementById('time-display').innerText = `${mins}:${secs.toString().padStart(2,'0')}`;
+            document.getElementById('fill').style.width = `${(now/duration)*100}%`;
+
+            let current = syncData.find((l, i) => {
+                let next = syncData[i+1] ? syncData[i+1].t : 9999;
+                return now >= l.t && now < next;
+            });
+
+            if (current && lyricText.innerText !== current.text) {
+                lyricText.classList.remove('show');
+                setTimeout(() => {
+                    lyricText.className = '';
+                    lyricText.classList.add(current.style, 'show');
+                    lyricText.innerText = current.text;
+                    layers.forEach((l, idx) => l.classList.toggle('active', idx === current.bg));
+                }, 200);
+            }
+
+            if (duration > 0 && now >= duration - 4) {
+                document.getElementById('fade-out-layer').style.opacity = '1';
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.ENDED) {
+                document.getElementById('fade-out-layer').style.opacity = '1';
+            }
+        }
+    </script>
+</body>
+</html>
